@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from typing import Self
 
 SVG_NS = "http://www.w3.org/2000/svg"
+ET.register_namespace("", SVG_NS)
 MAX_SVG_BYTES = 65536
 MAX_ELEMENTS = 128
 ANIMATION_TAGS = {"animate", "animateTransform"}
@@ -157,7 +158,7 @@ class MotionEvaluator(AbstractContextManager):
 
     def sample(self, source: str, duration: float) -> list:
         """Read CTMs and cumulative opacity for every drawable at fixed times."""
-        parse_svg(source)
+        source = ET.tostring(parse_svg(source), encoding="unicode")
         page = self._browser.new_page(viewport={"width": 256, "height": 256})
         try:
             page.route("**/*", lambda route: route.abort())

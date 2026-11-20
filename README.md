@@ -2,7 +2,9 @@
 
 Fine-tune a small open model to turn a static SVG and a motion instruction into an animated SVG.
 
-Status: the free-T4 smoke run completed; the main 100-step experiment is running. Main test results will be added only after evaluation finishes.
+Trained on a free Colab Tesla T4. On all 100 held-out synthetic tasks, the untouched model passed **0/100** complete animation checks and the LoRA adapter passed **100/100**. The comparison includes every test output.
+
+The main run used 100 optimizer steps (0.40 epoch; 400 training examples processed) and took 512 seconds for training. Final validation token loss was 0.00003061. Checkpoint selection used validation loss, not test results. This is a small experiment in learning a fixed animation grammar, not a general SVG animation benchmark.
 
 Budget: free Colab GPU only. Training must fail clearly if CUDA is unavailable.
 

@@ -34,7 +34,9 @@ def verify(demo: Path, output: Path) -> None:
         page.get_by_role("button", name="Replay both").click()
         page.wait_for_timeout(6000)
         if page.locator("#example option").count() > 1:
-            page.locator("#example").select_option(index=min(3, page.locator("#example option").count() - 1))
+            page.locator("#example").select_option(
+                index=min(3, page.locator("#example option").count() - 1)
+            )
             page.wait_for_timeout(6000)
         if errors:
             raise AssertionError(errors)

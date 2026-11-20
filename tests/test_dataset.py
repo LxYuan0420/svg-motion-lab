@@ -1,6 +1,7 @@
 """Data separation and real browser checks for the animation task."""
 
 import unittest
+import xml.etree.ElementTree as ET
 from dataclasses import asdict
 
 from dataset import MOTION_PAIRS, SHAPES, make_example
@@ -82,6 +83,18 @@ class BrowserTests(unittest.TestCase):
         )
         self.assertNotEqual(equivalent, row["target_svg"])
         self.assertTrue(self.evaluator.score(row, equivalent).motion_pass)
+
+    def test_xml_namespace_prefix_does_not_change_rendering(self):
+        row = asdict(make_example("test", 0))
+        prefixed = ET.tostring(ET.fromstring(row["target_svg"]), encoding="unicode")
+        prefixed = prefixed.replace(
+            'xmlns="http://www.w3.org/2000/svg"', 'xmlns:s="http://www.w3.org/2000/svg"'
+        )
+        for tag in ("svg", "g", "path", "rect", "animateTransform", "animate"):
+            prefixed = prefixed.replace(f"<{tag} ", f"<s:{tag} ").replace(
+                f"</{tag}>", f"</s:{tag}>"
+            )
+        self.assertTrue(self.evaluator.score(row, prefixed).motion_pass)
 
 
 if __name__ == "__main__":

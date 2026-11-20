@@ -4,19 +4,19 @@ from __future__ import annotations
 
 import argparse
 import json
+import xml.etree.ElementTree as ET
 from html import escape
 from pathlib import Path
 
 from evaluate import parse_svg
 
 
-def renderable(source: str) -> bool:
-    """Only validated SVG can enter the sandboxed comparison frames."""
+def render_source(source: str) -> str | None:
+    """Normalize valid SVG for HTML; invalid outputs stay visible as code only."""
     try:
-        parse_svg(source)
+        return ET.tostring(parse_svg(source), encoding="unicode")
     except ValueError:
-        return False
-    return True
+        return None
 
 
 def motion_summary(row: dict) -> str:
@@ -63,6 +63,15 @@ def build(data: Path, run: Path, split: str, output: Path) -> None:
     examples = []
     for identity in arms["base"]:
         row = rows[identity]
+        views = {}
+        for arm in arms:
+            result = arms[arm][identity]
+            source = render_source(result["prediction"])
+            views[arm] = {
+                **result,
+                "renderable": source is not None,
+                "render_source": source or "",
+            }
         examples.append(
             {
                 "id": identity,
@@ -71,13 +80,7 @@ def build(data: Path, run: Path, split: str, output: Path) -> None:
                 "summary": motion_summary(row),
                 "input_svg": row["input_svg"],
                 "duration": row["specification"][0]["duration"],
-                **{
-                    arm: {
-                        **arms[arm][identity],
-                        "renderable": renderable(arms[arm][identity]["prediction"]),
-                    }
-                    for arm in arms
-                },
+                **views,
             }
         )
     metadata = json.loads((run / "run.json").read_text())
@@ -107,7 +110,7 @@ def build(data: Path, run: Path, split: str, output: Path) -> None:
     function sync(t,stop){for(const svg of svgs()){svg.pauseAnimations();svg.setCurrentTime(t);if(!stop)svg.unpauseAnimations();}paused=stop;document.getElementById('pause').textContent=stop?'Play':'Pause';}
     function show(index){current=examples[index];document.getElementById('instruction').textContent=current.instruction;document.getElementById('summary').textContent=current.summary;timeline.value=0;document.getElementById('time').textContent='0.00 s';let loaded=0;const count=['base','finetuned'].filter(arm=>current[arm].renderable).length;
       for(const arm of ['base','finetuned']){const result=current[arm],view=document.getElementById(arm+'-view');view.replaceChildren();const badge=document.getElementById(arm+'-badge');badge.textContent=result.score.motion_pass?'Passed':'Failed';badge.className='badge '+(result.score.motion_pass?'pass':'fail');document.getElementById(arm+'-reason').textContent=result.score.reason;document.getElementById(arm+'-code').textContent=result.prediction;
-        if(result.renderable){const frame=document.createElement('iframe');frame.title=arm+' animation';frame.setAttribute('sandbox','allow-same-origin');frame.srcdoc=`<!doctype html><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'none'; style-src 'unsafe-inline'"><style>body{margin:0;display:grid;place-items:center;height:100vh;background:#101b2f}svg{width:100%;height:100%}</style>${result.prediction}`;frame.onload=()=>{loaded++;if(loaded===count)sync(0,false)};view.append(frame);}else{const message=document.createElement('div');message.className='error';message.textContent='Output could not be safely rendered';view.append(message);}}
+        if(result.renderable){const frame=document.createElement('iframe');frame.title=arm+' animation';frame.setAttribute('sandbox','allow-same-origin');frame.srcdoc=`<!doctype html><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'none'; style-src 'unsafe-inline'"><style>body{margin:0;display:grid;place-items:center;height:100vh;background:#101b2f}svg{width:100%;height:100%}</style>${result.render_source}`;frame.onload=()=>{loaded++;if(loaded===count)sync(0,false)};view.append(frame);}else{const message=document.createElement('div');message.className='error';message.textContent='Output could not be safely rendered';view.append(message);}}
     }
     select.onchange=()=>show(Number(select.value));document.getElementById('restart').onclick=()=>{timeline.value=0;sync(0,false)};document.getElementById('pause').onclick=()=>{const t=svgs()[0]?.getCurrentTime()||0;sync(t,!paused)};timeline.oninput=()=>{const t=Number(timeline.value)/1000*current.duration;sync(t,true);document.getElementById('time').textContent=t.toFixed(2)+' s'};show(0);
     </script></body></html>"""

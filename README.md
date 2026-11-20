@@ -2,6 +2,8 @@
 
 Fine-tune a small open model to turn a static SVG and a motion instruction into an animated SVG.
 
+[Live comparison](https://huggingface.co/spaces/lxyuan/svg-motion-lab) · [Model adapter](https://huggingface.co/lxyuan/SVG-Motion-Qwen3.5-0.8B-LoRA) · [Dataset](https://huggingface.co/datasets/lxyuan/svg-motion-lab) · [Demo video](https://lxyuan-svg-motion-lab.static.hf.space/comparison.mp4)
+
 Trained on a free Colab Tesla T4. On all 100 held-out synthetic tasks, the untouched model passed **0/100** complete animation checks and the LoRA adapter passed **100/100**. The comparison includes every test output.
 
 The main run used 100 optimizer steps (0.40 epoch; 400 training examples processed) and took 512 seconds for training. Final validation token loss was 0.00003061. Checkpoint selection used validation loss, not test results. This is a small experiment in learning a fixed animation grammar, not a general SVG animation benchmark.
